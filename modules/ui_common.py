@@ -138,10 +138,24 @@ Requested path was: {f}
 
                 buttons = parameters_copypaste.create_buttons(["img2img", "inpaint", "extras"])
 
+            browser = gr.Gallery(label='Browser', show_label=False, elem_id=f"{tabname}_browser").style(grid=9)
+            def browse(img_dir):
+                import glob
+                from datetime import date
+                today = date.today()
+                img_dir = os.path.normpath(img_dir)
+                pattern = img_dir + f'/{today}/*.png'
+                return [(fn, os.path.basename(fn)) for fn in glob.glob(pattern)]
+
+            # open_folder_button.click(
+            #     fn=lambda: open_folder(shared.opts.outdir_samples or outdir),
+            #     inputs=[],
+            #     outputs=[],
+            # )
             open_folder_button.click(
-                fn=lambda: open_folder(shared.opts.outdir_samples or outdir),
-                inputs=[],
-                outputs=[],
+                fn=lambda: browse(shared.opts.outdir_samples or outdir),
+                inputs=None,
+                outputs=browser,
             )
 
             if tabname != "extras":
