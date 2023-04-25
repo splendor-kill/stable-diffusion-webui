@@ -21,7 +21,7 @@ from modules.call_queue import wrap_gradio_gpu_call, wrap_queued_call, wrap_grad
 
 from modules import sd_hijack, sd_models, localization, script_callbacks, ui_extensions, deepbooru, sd_vae, extra_networks, postprocessing, ui_components, ui_common, ui_postprocessing
 from modules.ui_components import FormRow, FormColumn, FormGroup, ToolButton, FormHTML
-from modules.paths import script_path, data_path
+from modules.paths import script_path, data_path, models_path
 
 from modules.shared import opts, cmd_opts, restricted_opts
 
@@ -1545,6 +1545,110 @@ def create_ui():
             inputs=[],
             outputs=[],
         )
+    
+    with gr.Blocks(analytics_enabled=False) as fsbm_helper_interface:
+        import glob
+        dataset_root = os.path.join(data_path, 'input')        
+
+        def get_mtime(path):
+            mt = os.path.getmtime(path)
+            return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(mt))
+
+        def get_datasets():
+            datasets = []
+            for path in glob.glob(f'{dataset_root}/*/**/', recursive=True):
+                subd = os.path.relpath(path, dataset_root)
+                mt = get_mtime(path)
+                datasets.append([subd, mt])
+            return datasets
+
+        with gr.Column():
+            gr.Markdown('### 我的数据集')
+            content = get_datasets()
+            if not content:
+                content = [['', '']]
+            df_my_ds = gr.DataFrame(
+                content,
+                headers=["目录名", "修改时间"],
+                datatype=["str", "date"],
+                type="array",
+                col_count=2,
+                interactive=False)
+            btn_upload_ds = gr.UploadButton('上传数据集', file_types=['*.zip'])
+        
+        def upload_ds(x, df, to):
+            import zipfile
+            tmp_file_name = x.name
+            place = df[to[0]][0] if to is not None else '.'
+            if not place:
+                place = '.'
+            bn_stem = os.path.splitext(os.path.basename(tmp_file_name))[0]
+            to_dir = os.path.normpath(os.path.join(dataset_root, place, bn_stem))
+
+            with zipfile.ZipFile(tmp_file_name, 'r') as f:
+                f.extractall(to_dir)
+            try:
+                os.remove(tmp_file_name)
+            except:
+                pass
+
+            place = os.path.relpath(to_dir, dataset_root)
+            mt = get_mtime(to_dir)
+            try:
+                df.remove(['', ''])
+            except:
+                pass
+            df.append([place, mt])
+            return df 
+
+        def select_dir_to_place(evt: gr.SelectData):
+            return evt.index
+
+        row_indicator = gr.State()
+        btn_upload_ds.upload(upload_ds, [btn_upload_ds, df_my_ds, row_indicator], df_my_ds)
+        df_my_ds.select(select_dir_to_place, None, row_indicator)
+
+        def get_my_trained_models():
+            mods_root = os.path.join(models_path, 'dreambooth')
+            mods = []
+            for path in glob.glob(f'{mods_root}/*/'):
+                subd = os.path.relpath(path, mods_root)
+                mt = get_mtime(path)
+                mods.append([subd, mt])
+            return mods
+
+        gr.HTML()
+        with gr.Column():
+            gr.Markdown('### 我的DreamBooth')
+            content = get_my_trained_models()
+            if not content:
+                content = [['', '']]
+            gr.DataFrame(
+                content,
+                headers=["模型名", "创建时间"],
+                datatype=["str", "date"],
+                type="array",
+                col_count=2,
+                interactive=False)
+
+        gr.HTML()
+        with gr.Column():
+            gr.Markdown('### 第三方模型')
+            result_show = gr.File(show_lable=False, interactive=False)
+            with gr.Row():
+                btn_upload_ckpt = gr.UploadButton("上传Checkpoint", file_types=[".ckpt", ".safetensors", ".yaml", ".info", ".png"])
+                btn_upload_lora = gr.UploadButton("上传LoRA", file_types=[".ckpt", ".safetensors", ".yaml", ".info", ".png"])
+
+        from functools import partial
+        import shutil
+        def upload_file(files, to_dir):            
+            print(files.name)
+            shutil.copy2(files.name, to_dir)
+            return files.name
+
+        btn_upload_ckpt.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Stable-diffusion')), btn_upload_ckpt, result_show)
+        btn_upload_lora.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Lora')), btn_upload_lora, result_show)
+
 
     interfaces = [
         (txt2img_interface, "txt2img", "txt2img"),
@@ -1553,6 +1657,7 @@ def create_ui():
         (pnginfo_interface, "PNG Info", "pnginfo"),
         (modelmerger_interface, "Checkpoint Merger", "modelmerger"),
         (train_interface, "Train", "ti"),
+        (fsbm_helper_interface, "同拳小助手", "fsbm_helper")
     ]
 
     interfaces += script_callbacks.ui_tabs_callback()
