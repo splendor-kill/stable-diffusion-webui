@@ -138,13 +138,13 @@ Requested path was: {f}
 
                 buttons = parameters_copypaste.create_buttons(["img2img", "inpaint", "extras"])
 
-            browser = gr.Gallery(label='Browser', show_label=False, elem_id=f"{tabname}_browser").style(grid=9)
+            browser = gr.Gallery(label='Browser', show_label=False, preview=True, elem_id=f"{tabname}_browser").style(grid=10)
             def browse(img_dir):
                 import glob
-                from datetime import date
-                today = date.today()
-                img_dir = os.path.normpath(img_dir)
-                pattern = img_dir + f'/{today}/*.png'
+                subdirs = [os.path.join(img_dir, name) for name in os.listdir(img_dir)
+                           if os.path.isdir(os.path.join(img_dir, name))]
+                img_dir = max(subdirs, key=os.path.getmtime)
+                pattern = img_dir + '/*.png'
                 return [(fn, os.path.basename(fn)) for fn in glob.glob(pattern)]
 
             # open_folder_button.click(
