@@ -1638,16 +1638,18 @@ def create_ui():
             with gr.Row():
                 btn_upload_ckpt = gr.UploadButton("上传Checkpoint", file_types=[".ckpt", ".safetensors", ".yaml", ".info", ".png"])
                 btn_upload_lora = gr.UploadButton("上传LoRA", file_types=[".ckpt", ".safetensors", ".yaml", ".info", ".png"])
+                btn_upload_controlnet = gr.UploadButton("上传ControlNet模型", file_types=[".ckpt", ".safetensors", ".pth", ".yaml", ".info", ".png"])
 
         from functools import partial
         import shutil
-        def upload_file(files, to_dir):            
-            print(files.name)
-            shutil.copy2(files.name, to_dir)
-            return files.name
+        def upload_file(files, to_dir):
+            if os.path.exists(to_dir):
+                shutil.copy2(files.name, to_dir)
+                return files.name
 
         btn_upload_ckpt.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Stable-diffusion')), btn_upload_ckpt, result_show)
         btn_upload_lora.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Lora')), btn_upload_lora, result_show)
+        btn_upload_controlnet.upload(partial(upload_file, to_dir=os.path.join(script_path, 'extensions/sd-webui-controlnet')), btn_upload_controlnet, result_show)
 
 
     interfaces = [
