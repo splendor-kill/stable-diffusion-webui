@@ -1649,7 +1649,7 @@ def create_ui():
 
         btn_upload_ckpt.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Stable-diffusion')), btn_upload_ckpt, result_show)
         btn_upload_lora.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Lora')), btn_upload_lora, result_show)
-        btn_upload_controlnet.upload(partial(upload_file, to_dir=os.path.join(script_path, 'extensions/sd-webui-controlnet')), btn_upload_controlnet, result_show)
+        btn_upload_controlnet.upload(partial(upload_file, to_dir=os.path.join(script_path, 'extensions/sd-webui-controlnet/models')), btn_upload_controlnet, result_show)
 
 
     interfaces = [
