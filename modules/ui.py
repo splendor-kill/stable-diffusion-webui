@@ -1740,22 +1740,18 @@ def create_ui():
         with gr.Column():
             gr.Markdown('### 第三方模型')
             result_show = gr.File(show_lable=False, interactive=False)
+            model_names = os.listdir('models')
             with gr.Row():
-                btn_upload_ckpt = gr.UploadButton("上传Checkpoint", file_types=[".ckpt", ".safetensors", ".yaml", ".info", ".png"])
-                btn_upload_lora = gr.UploadButton("上传LoRA", file_types=[".ckpt", ".safetensors", ".yaml", ".info", ".png"])
-                btn_upload_controlnet = gr.UploadButton("上传ControlNet模型", file_types=[".ckpt", ".safetensors", ".pth", ".yaml", ".info", ".png"])
+                dd_model_type = gr.Dropdown(choices=model_names, value='Stable-diffusion', label='模型类型')
+                btn_upload_model = gr.UploadButton("上传", file_types=[".ckpt", ".safetensors", ".pt", ".pth", ".yaml", ".info", ".png"])
 
-        from functools import partial
         import shutil
         def upload_file(files, to_dir):
+            to_dir = os.path.join(models_path, to_dir)
             if os.path.exists(to_dir):
                 shutil.copy2(files.name, to_dir)
                 return files.name
-
-        btn_upload_ckpt.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Stable-diffusion')), btn_upload_ckpt, result_show)
-        btn_upload_lora.upload(partial(upload_file, to_dir=os.path.join(models_path, 'Lora')), btn_upload_lora, result_show)
-        btn_upload_controlnet.upload(partial(upload_file, to_dir=os.path.join(script_path, 'extensions/sd-webui-controlnet/models')), btn_upload_controlnet, result_show)
-
+        btn_upload_model.upload(upload_file, [btn_upload_model, dd_model_type], result_show)
 
     interfaces = [
         (txt2img_interface, "txt2img", "txt2img"),
